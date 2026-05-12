@@ -1,8 +1,9 @@
 const router = require('express').Router();
 const { getPool } = require('../db');
 const cache = require('../cache');
+const auth = require('../middleware/auth');
 
-router.get('/', async (req, res) => {
+router.get('/', auth(), async (req, res) => {
   const cached = cache.get('mahasiswa');
   if (cached) return res.json(cached);
   const [rows] = await getPool().query(`
@@ -15,7 +16,7 @@ router.get('/', async (req, res) => {
   res.json(rows);
 });
 
-router.post('/', async (req, res) => {
+router.post('/', auth('admin'), async (req, res) => {
   const { nim, nama, jurusan, semester, dosen_id } = req.body;
   try {
     const [result] = await getPool().query(
@@ -30,7 +31,7 @@ router.post('/', async (req, res) => {
   }
 });
 
-router.put('/:id', async (req, res) => {
+router.put('/:id', auth('admin'), async (req, res) => {
   const { nim, nama, jurusan, semester, dosen_id } = req.body;
   try {
     await getPool().query(
@@ -45,7 +46,7 @@ router.put('/:id', async (req, res) => {
   }
 });
 
-router.delete('/:id', async (req, res) => {
+router.delete('/:id', auth('admin'), async (req, res) => {
   await getPool().query('DELETE FROM mahasiswa WHERE id=?', [req.params.id]);
   cache.del('mahasiswa');
   res.json({ message: 'Deleted' });

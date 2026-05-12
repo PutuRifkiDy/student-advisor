@@ -7,8 +7,10 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
+app.use('/api/auth', require('./routes/auth'));
 app.use('/api/dosen', require('./routes/dosen'));
 app.use('/api/mahasiswa', require('./routes/mahasiswa'));
+app.use('/api/users', require('./routes/users'));
 
 const PORT = process.env.PORT || 5000;
 
