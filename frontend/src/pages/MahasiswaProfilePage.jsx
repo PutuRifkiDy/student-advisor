@@ -1,19 +1,35 @@
 import { useEffect, useState } from 'react';
 import { api } from '../api';
 import { useAuth } from '../context/AuthContext';
+import { useToast, ToastContainer } from '../components/Toast';
 
 export default function MahasiswaProfilePage() {
   const { user } = useAuth();
   const [data, setData] = useState(null);
+  const [editing, setEditing] = useState(false);
+  const [form, setForm] = useState({});
+  const { toasts, show } = useToast();
 
-  useEffect(() => {
-    api.get('/mahasiswa').then((list) => {
-      const me = list.find((m) => m.id === user.ref_id);
-      setData(me);
-    });
-  }, [user.ref_id]);
+  const load = () => api.get('/mahasiswa').then((list) => {
+    const me = list.find((m) => m.id === user.ref_id);
+    setData(me);
+    setForm({ nama: me.nama, jurusan: me.jurusan, semester: me.semester });
+  });
+
+  useEffect(() => { load(); }, []);
+
+  const save = async () => {
+    try {
+      await api.put('/mahasiswa/me', form);
+      show('Profil berhasil diperbarui');
+      setEditing(false);
+      load();
+    } catch (err) { show(err.message, 'error'); }
+  };
 
   if (!data) return <div className="text-center py-16 text-slate-400">Memuat data...</div>;
+
+  const set = (k) => (e) => setForm((f) => ({ ...f, [k]: e.target.value }));
 
   return (
     <div className="max-w-lg mx-auto">
@@ -28,19 +44,48 @@ export default function MahasiswaProfilePage() {
           <p className="text-indigo-200 text-sm mt-1">{data.nim}</p>
         </div>
 
-        <div className="p-6 space-y-4">
-          {[
-            ['Jurusan', data.jurusan],
-            ['Semester', `Semester ${data.semester}`],
-            ['Dosen Pembimbing', data.nama_dosen ?? 'Belum ditentukan'],
-          ].map(([label, value]) => (
-            <div key={label} className="flex justify-between items-center py-3 border-b border-slate-50 last:border-0">
-              <span className="text-sm text-slate-400 font-medium">{label}</span>
-              <span className="text-sm font-semibold text-slate-800">{value}</span>
+        <div className="p-6">
+          {editing ? (
+            <div className="space-y-4">
+              {[['Nama Lengkap', 'nama', 'text'], ['Jurusan', 'jurusan', 'text']].map(([label, key, type]) => (
+                <div key={key}>
+                  <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1.5">{label}</label>
+                  <input type={type} value={form[key]} onChange={set(key)}
+                    className="w-full border border-slate-200 rounded-xl px-3.5 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400 focus:border-transparent" />
+                </div>
+              ))}
+              <div>
+                <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1.5">Semester</label>
+                <input type="number" min="1" max="14" value={form.semester} onChange={set('semester')}
+                  className="w-full border border-slate-200 rounded-xl px-3.5 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400 focus:border-transparent" />
+              </div>
+              <div className="flex gap-2 pt-2">
+                <button onClick={() => setEditing(false)} className="flex-1 px-4 py-2.5 rounded-xl border border-slate-200 text-sm text-slate-600 hover:bg-slate-50">Batal</button>
+                <button onClick={save} className="flex-1 px-4 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-medium">Simpan</button>
+              </div>
             </div>
-          ))}
+          ) : (
+            <>
+              <div className="space-y-1">
+                {[['Jurusan', data.jurusan], ['Semester', `Semester ${data.semester}`], ['Dosen Pembimbing', data.nama_dosen ?? 'Belum ditentukan']].map(([label, value]) => (
+                  <div key={label} className="flex justify-between items-center py-3 border-b border-slate-50 last:border-0">
+                    <span className="text-sm text-slate-400 font-medium">{label}</span>
+                    <span className="text-sm font-semibold text-slate-800">{value}</span>
+                  </div>
+                ))}
+              </div>
+              <button onClick={() => setEditing(true)}
+                className="mt-5 w-full flex items-center justify-center gap-2 border border-indigo-200 text-indigo-600 hover:bg-indigo-50 text-sm font-medium py-2.5 rounded-xl transition-colors">
+                <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
+                </svg>
+                Edit Profil
+              </button>
+            </>
+          )}
         </div>
       </div>
+      <ToastContainer toasts={toasts} />
     </div>
   );
 }

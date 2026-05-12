@@ -3,6 +3,19 @@ const { getPool } = require('../db');
 const cache = require('../cache');
 const auth = require('../middleware/auth');
 
+// Update profil sendiri (dosen login)
+router.put('/me', auth('dosen'), async (req, res) => {
+  const { nama, jurusan, jabatan } = req.body;
+  try {
+    await getPool().query('UPDATE dosen SET nama=?, jurusan=?, jabatan=? WHERE id=?',
+      [nama, jurusan, jabatan, req.user.ref_id]);
+    cache.del('dosen', 'mahasiswa');
+    res.json({ message: 'Updated' });
+  } catch (err) {
+    res.status(500).json({ message: 'Terjadi kesalahan server.' });
+  }
+});
+
 router.get('/', auth(), async (req, res) => {
   const cached = cache.get('dosen');
   if (cached) return res.json(cached);

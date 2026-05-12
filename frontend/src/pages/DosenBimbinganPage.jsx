@@ -2,26 +2,42 @@ import { useEffect, useState } from 'react';
 import { api } from '../api';
 import { useAuth } from '../context/AuthContext';
 import { useTableControls, TableControls, Pagination } from '../components/TableControls';
+import { useToast, ToastContainer } from '../components/Toast';
 
 export default function DosenBimbinganPage() {
   const { user } = useAuth();
   const [dosen, setDosen] = useState(null);
   const [mahasiswaList, setMahasiswaList] = useState([]);
   const [tab, setTab] = useState('bimbingan');
+  const [editing, setEditing] = useState(false);
+  const [form, setForm] = useState({});
+  const { toasts, show } = useToast();
 
-  useEffect(() => {
-    Promise.all([api.get('/dosen'), api.get('/mahasiswa')]).then(([dosenList, mList]) => {
-      setDosen(dosenList.find((d) => d.id === user.ref_id));
-      setMahasiswaList(mList.filter((m) => m.dosen_id === user.ref_id));
-    });
-  }, [user.ref_id]);
+  const load = () => Promise.all([api.get('/dosen'), api.get('/mahasiswa')]).then(([dosenList, mList]) => {
+    const me = dosenList.find((d) => d.id === user.ref_id);
+    setDosen(me);
+    setForm({ nama: me?.nama, jurusan: me?.jurusan, jabatan: me?.jabatan });
+    setMahasiswaList(mList.filter((m) => m.dosen_id === user.ref_id));
+  });
+
+  useEffect(() => { load(); }, [user.ref_id]);
+
+  const save = async () => {
+    try {
+      await api.put('/dosen/me', form);
+      show('Profil berhasil diperbarui');
+      setEditing(false);
+      load();
+    } catch (err) { show(err.message, 'error'); }
+  };
+
+  const set = (k) => (e) => setForm((f) => ({ ...f, [k]: e.target.value }));
 
   const { search, setSearch, filter, setFilter, filterOptions, page, setPage, perPage, setPerPage, paginated, filtered, totalPages } =
     useTableControls(mahasiswaList, ['nim', 'nama', 'jurusan'], 'jurusan');
 
   return (
     <div>
-      {/* Tab */}
       <div className="flex gap-1 mb-6 border-b border-slate-200">
         {[['bimbingan', 'Mahasiswa Bimbingan'], ['profil', 'Profil Saya']].map(([id, label]) => (
           <button key={id} onClick={() => setTab(id)}
@@ -41,13 +57,40 @@ export default function DosenBimbinganPage() {
               <h3 className="text-xl font-bold text-white">{dosen.nama}</h3>
               <p className="text-indigo-200 text-sm mt-1">{dosen.nip}</p>
             </div>
-            <div className="p-6 space-y-1">
-              {[['Jurusan', dosen.jurusan], ['Jabatan', dosen.jabatan], ['Jumlah Mahasiswa Bimbingan', `${mahasiswaList.length} mahasiswa`]].map(([label, value]) => (
-                <div key={label} className="flex justify-between items-center py-3 border-b border-slate-50 last:border-0">
-                  <span className="text-sm text-slate-400 font-medium">{label}</span>
-                  <span className="text-sm font-semibold text-slate-800">{value}</span>
+            <div className="p-6">
+              {editing ? (
+                <div className="space-y-4">
+                  {[['Nama Lengkap', 'nama'], ['Jurusan', 'jurusan'], ['Jabatan', 'jabatan']].map(([label, key]) => (
+                    <div key={key}>
+                      <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1.5">{label}</label>
+                      <input value={form[key] ?? ''} onChange={set(key)}
+                        className="w-full border border-slate-200 rounded-xl px-3.5 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400 focus:border-transparent" />
+                    </div>
+                  ))}
+                  <div className="flex gap-2 pt-2">
+                    <button onClick={() => setEditing(false)} className="flex-1 px-4 py-2.5 rounded-xl border border-slate-200 text-sm text-slate-600 hover:bg-slate-50">Batal</button>
+                    <button onClick={save} className="flex-1 px-4 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-medium">Simpan</button>
+                  </div>
                 </div>
-              ))}
+              ) : (
+                <>
+                  <div className="space-y-1">
+                    {[['Jurusan', dosen.jurusan], ['Jabatan', dosen.jabatan], ['Jumlah Mahasiswa Bimbingan', `${mahasiswaList.length} mahasiswa`]].map(([label, value]) => (
+                      <div key={label} className="flex justify-between items-center py-3 border-b border-slate-50 last:border-0">
+                        <span className="text-sm text-slate-400 font-medium">{label}</span>
+                        <span className="text-sm font-semibold text-slate-800">{value}</span>
+                      </div>
+                    ))}
+                  </div>
+                  <button onClick={() => setEditing(true)}
+                    className="mt-5 w-full flex items-center justify-center gap-2 border border-indigo-200 text-indigo-600 hover:bg-indigo-50 text-sm font-medium py-2.5 rounded-xl transition-colors">
+                    <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
+                    </svg>
+                    Edit Profil
+                  </button>
+                </>
+              )}
             </div>
           </div>
         </div>
@@ -55,17 +98,15 @@ export default function DosenBimbinganPage() {
 
       {tab === 'bimbingan' && (
         <>
-          <div className="flex items-center justify-between mb-4">
+          <div className="mb-4">
             <p className="text-sm text-slate-500">{mahasiswaList.length} mahasiswa bimbingan</p>
           </div>
-
           <TableControls
             search={search} onSearch={setSearch}
             filter={filter} onFilter={setFilter}
             filterOptions={filterOptions} filterLabel="Jurusan"
             perPage={perPage} onPerPage={(v) => { setPerPage(v); setPage(1); }}
           />
-
           <div className="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden">
             <table className="w-full text-sm">
               <thead>
@@ -92,10 +133,11 @@ export default function DosenBimbinganPage() {
               </tbody>
             </table>
           </div>
-
           <Pagination page={page} totalPages={totalPages} onPage={setPage} total={filtered.length} perPage={perPage} />
         </>
       )}
+
+      <ToastContainer toasts={toasts} />
     </div>
   );
 }
