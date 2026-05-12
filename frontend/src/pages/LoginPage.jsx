@@ -80,6 +80,30 @@ export default function LoginPage() {
             {loading ? 'Memproses...' : 'Masuk'}
           </button>
         </form>
+
+        <div className="mt-4 bg-white rounded-2xl shadow-xl p-5">
+          <p className="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-3">Akun Demo</p>
+          <div className="space-y-2">
+            {[
+              { role: 'Admin', username: 'admin', password: 'admin123', color: 'bg-violet-50 text-violet-700' },
+              { role: 'Dosen', username: '198501012010011001', password: '198501012010011001', color: 'bg-blue-50 text-blue-700' },
+              { role: 'Mahasiswa', username: '2021050001', password: '2021050001', color: 'bg-emerald-50 text-emerald-700' },
+            ].map((demo) => (
+              <button
+                key={demo.role}
+                type="button"
+                onClick={() => setForm({ username: demo.username, password: demo.password })}
+                className="w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl border border-slate-100 hover:bg-slate-50 transition-colors text-left"
+              >
+                <div>
+                  <span className={`text-xs font-semibold px-2 py-0.5 rounded-full mr-2 ${demo.color}`}>{demo.role}</span>
+                  <span className="text-xs text-slate-500 font-mono">{demo.username}</span>
+                </div>
+                <span className="text-xs text-slate-300">Klik untuk isi</span>
+              </button>
+            ))}
+          </div>
+        </div>
       </div>
     </div>
   );
