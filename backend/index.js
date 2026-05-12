@@ -12,6 +12,19 @@ app.use('/api/dosen', require('./routes/dosen'));
 app.use('/api/mahasiswa', require('./routes/mahasiswa'));
 app.use('/api/users', require('./routes/users'));
 
+// Endpoint seed sekali pakai — hapus setelah digunakan
+app.post('/api/seed', async (req, res) => {
+  if (req.headers['x-seed-key'] !== process.env.SEED_KEY)
+    return res.status(403).json({ message: 'Forbidden' });
+  try {
+    const run = require('./seed-runner');
+    await run();
+    res.json({ message: 'Seed berhasil!' });
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+});
+
 const PORT = process.env.PORT || 5000;
 
 init()
