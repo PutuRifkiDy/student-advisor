@@ -3,7 +3,7 @@ const { getPool } = require('../db');
 const cache = require('../cache');
 const auth = require('../middleware/auth');
 
-// Update profil sendiri (mahasiswa login)
+// Update profil sendiri (mahasiswa login) — harus sebelum /:id
 router.put('/me', auth('mahasiswa'), async (req, res) => {
   const { nama, jurusan, semester } = req.body;
   try {
