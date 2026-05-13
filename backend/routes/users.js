@@ -27,6 +27,8 @@ router.post('/', auth('admin'), async (req, res) => {
 
 // PUT update role (admin only)
 router.put('/:id', auth('admin'), async (req, res) => {
+  const [rows] = await getPool().query('SELECT role FROM users WHERE id=?', [req.params.id]);
+  if (rows[0]?.role === 'admin') return res.status(403).json({ message: 'Akun admin tidak dapat diubah.' });
   const { role, ref_id } = req.body;
   await getPool().query('UPDATE users SET role=?, ref_id=? WHERE id=?', [role, ref_id || null, req.params.id]);
   res.json({ message: 'Updated' });
@@ -34,6 +36,8 @@ router.put('/:id', auth('admin'), async (req, res) => {
 
 // DELETE user (admin only)
 router.delete('/:id', async (req, res) => {
+  const [rows] = await getPool().query('SELECT role FROM users WHERE id=?', [req.params.id]);
+  if (rows[0]?.role === 'admin') return res.status(403).json({ message: 'Akun admin tidak dapat dihapus.' });
   await getPool().query('DELETE FROM users WHERE id=?', [req.params.id]);
   res.json({ message: 'Deleted' });
 });

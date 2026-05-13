@@ -88,8 +88,14 @@ export default function UsersPage() {
                   <td className="px-5 py-4 text-slate-500 text-sm">{linked ?? <span className="text-slate-300 italic text-xs">—</span>}</td>
                   <td className="px-5 py-4">
                     <div className="flex gap-3">
-                      <button onClick={() => openEdit(u)} className="text-indigo-600 hover:text-indigo-800 text-xs font-medium">Edit Role</button>
-                      <button onClick={() => setDeleteTarget({ id: u.id, nama: u.username })} className="text-red-400 hover:text-red-600 text-xs font-medium">Hapus</button>
+                      {u.role !== 'admin' ? (
+                        <>
+                          <button onClick={() => openEdit(u)} className="text-indigo-600 hover:text-indigo-800 text-xs font-medium">Edit Role</button>
+                          <button onClick={() => setDeleteTarget({ id: u.id, nama: u.username })} className="text-red-400 hover:text-red-600 text-xs font-medium">Hapus</button>
+                        </>
+                      ) : (
+                        <span className="text-xs text-slate-300 italic">Terlindungi</span>
+                      )}
                     </div>
                   </td>
                 </tr>
